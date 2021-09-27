@@ -193,10 +193,11 @@ class Caffe2Onnx():
                     outname.append(name)
                     outshape.append(shape)
 
-        try:
-            assert outname, "failed at layer %s, layer's bottom not detected ... "%(layer.name)
-        except:
-            print("failed at layer %s, layer's bottom not detected ... "%(layer.name))
+        #try:
+        #    assert outname, "failed at layer %s, layer's bottom not detected ... "%(layer.name)
+        #except:
+        if len(outname) == 0 :
+            print("layer %s, layer's bottom not detected ... "%(layer.name))
 
         return outname, outshape
 
@@ -212,7 +213,14 @@ class Caffe2Onnx():
 
 
     def __getNodeList(self,Layers):
+        Layers = [ l  for l in Layers if len(l.include) == 0 or l.include[0].phase is None or l.include[0].phase == 1] 
+        for l in Layers:
+            print(l.name)
         for i in range(len(Layers)):
+            
+            inname, input_shape = self.__getLastLayerOutNameAndShape(Layers[i])
+            if len(inname) == 0:
+                continue
             # Convolution
             if Layers[i].type == "Convolution" or Layers[i].type == Layer_CONVOLUTION:
                 # 1. Get node input name, input dimension, output name, node name
@@ -351,7 +359,7 @@ class Caffe2Onnx():
                 self.__n += 1
 
             # Dropout
-            elif Layers[i].type == "Dropout" or Layers[i].type == Layer_DROPOUT:
+            elif Layers[i].type == "Dropout" or Layers[i].type == Layer_DROPOUT or Layers[i].type == "Permute" or Layers[i].type == "Reshape":
                 # 1. Get node input name, input dimension, output name, node name
                 inname,input_shape = self.__getLastLayerOutNameAndShape(Layers[i])
                 outname = self.__getCurrentLayerOutName(Layers[i])
@@ -363,6 +371,47 @@ class Caffe2Onnx():
                 # 3. Add nodes to the node list
                 self.NodeList.append(Dropout_node)
                 self.__n += 1
+
+            elif Layers[i].type == "Flatten":
+                # 1. Get node input name, input dimension, output name, node name
+                inname,input_shape = self.__getLastLayerOutNameAndShape(Layers[i])
+                outname = self.__getCurrentLayerOutName(Layers[i])
+                nodename = Layers[i].name
+
+                # 2. BuildDropout_node
+                Flatten_node = op.createFlatten(Layers[i], nodename, inname, outname, input_shape)
+
+                # 3. Add nodes to the node list
+                self.NodeList.append(Flatten_node)
+                self.__n += 1
+
+            elif Layers[i].type == "DetectionOutput":
+                # 1. Get node input name, input dimension, output name, node name
+                inname,input_shape = self.__getLastLayerOutNameAndShape(Layers[i])
+                outname = self.__getCurrentLayerOutName(Layers[i])
+                nodename = 'Boxes'
+
+                print(nodename, inname, input_shape)
+                # 2. Boxes
+                output_shape = [[1,1000,5]]
+                outname = ["Boxes"]
+                # Build node
+                node = c2oNode(Layers[i], nodename, "Concat", inname, outname, input_shape, output_shape, {"axis":1})
+                # 3. Add nodes to the node list
+                self.NodeList.append(node)
+
+                nodename = 'Labels'
+                # 4. Lables
+                output_shape = [[1,1000]]
+                outname = ["Labels"]
+                # Build node
+                node = c2oNode(Layers[i], nodename, "Concat", inname, outname, input_shape, output_shape, {"axis":1})
+                # 5. Add nodes to the node list
+                self.NodeList.append(node)
+
+                self.__n += 2
+                print(nodename, " node construction completed")
+
 
 
             # Upsample
@@ -478,14 +527,26 @@ class Caffe2Onnx():
 
                 #3. Build conv_node
                 conv_node = op.createConvTranspose(Layers[i], nodename, inname, outname, input_shape)
-                if self.debug:
-                    self.__print_debug_info(nodename, inname, outname, input_shape, conv_node.outputs_shape)
+                #if self.debug:
+                #    self.__print_debug_info(nodename, inname, outname, input_shape, conv_node.outputs_shape)
 
                 # 4. Add node to node list
                 self.NodeList.append(conv_node)
                 self.__n += 1
 
+            # Softmax
+            elif Layers[i].type == "ArgMax":
+                # 1. Get node input name, input dimension, output name, node name
+                inname,input_shape = self.__getLastLayerOutNameAndShape(Layers[i]) # Get input name list and input shape
+                outname = self.__getCurrentLayerOutName(Layers[i]) # Get the output name list
+                nodename = Layers[i].name
 
+                # 2. Build argmax_node
+                argmax_node = op.createArgmax(Layers[i],nodename, inname, outname, input_shape)
+
+                # 3. Add nodes to the node list
+                self.NodeList.append(argmax_node)
+                self.__n += 1
 
     # Determine whether the current node is an output node
     def judgeoutput(self,current_node,nodelist):
@@ -498,15 +559,18 @@ class Caffe2Onnx():
     # Add model output information and intermediate node information
     def __addOutputsTVIandValueInfo(self):
         for i in range(len(self.NodeList)):
+            out_type = TensorProto.FLOAT
+            if self.NodeList[i].node.op_type == 'ArgMax':
+                out_type = TensorProto.INT64
             if self.judgeoutput(self.NodeList[i],self.NodeList):# Build output node information
                 lastnode = self.NodeList[i]
                 for j in range(len(lastnode.outputs_shape)):
-                    output_tvi = helper.make_tensor_value_info(lastnode.outputs_name[j], TensorProto.FLOAT,lastnode.outputs_shape[j])
+                    output_tvi = helper.make_tensor_value_info(lastnode.outputs_name[j], out_type,lastnode.outputs_shape[j])
                     self.onnxmodel.addOutputsTVI(output_tvi)
             else:# Build intermediate node information
                 innernode = self.NodeList[i]
                 for k in range(len(innernode.outputs_shape)):
-                    hid_out_tvi = helper.make_tensor_value_info(innernode.outputs_name[k], TensorProto.FLOAT,innernode.outputs_shape[k])
+                    hid_out_tvi = helper.make_tensor_value_info(innernode.outputs_name[k], out_type, innernode.outputs_shape[k])
                     self.onnxmodel.addValueInfoTVI(hid_out_tvi)
         print("add model output information and model intermediate output information")
 
@@ -521,6 +585,11 @@ class Caffe2Onnx():
             self.onnxmodel.init_t,
             value_info=self.onnxmodel.hidden_out_tvi
         )
+        
+        #op = onnx.OperatorSetIdProto()
+        #op.version = 11
+        #model_def = helper.make_model(graph_def, producer_name='caffe', opset_imports=[op])
+
         model_def = helper.make_model(graph_def, producer_name='caffe')
         print("*.onnx model conversion completed")
         return model_def

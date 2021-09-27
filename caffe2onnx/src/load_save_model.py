@@ -1,6 +1,6 @@
 from google.protobuf import text_format
 import onnx
-from caffe2onnx.proto import caffe_upsample_pb2 as caffe_pb2
+from caffe2onnx.proto import caffe_ssd_pb2 as caffe_pb2
 
 def loadcaffemodel(net_path,model_path):
     # read prototxt

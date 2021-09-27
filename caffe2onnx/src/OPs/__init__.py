@@ -13,3 +13,6 @@ from caffe2onnx.src.OPs.Softmax import *
 from caffe2onnx.src.OPs.Upsample import *
 from caffe2onnx.src.OPs.UnPooling import *
 from caffe2onnx.src.OPs.ConvTranspose import *
+from caffe2onnx.src.OPs.ArgMax import *
+from caffe2onnx.src.OPs.Flatten import *
+from caffe2onnx.src.OPs.DetectionOutput import *

@@ -7,19 +7,15 @@ This tool converts Caffe models to ONNX via command line (without Caffe environm
 This is the second version of converting caffe model to onnx model. In this version, all the parameters will be transformed to tensor and tensor value info when reading **.caffemodel** file and each operator node is constructed directly into the type of NodeProto in **onnx**.
 
 ## Installation
-Install from pypi  
-```
-pip install caffe2onnx
-```
 
 Install latest from github  
 ```
-pip install git+https://github.com/asiryan/caffe2onnx
+pip install git+https://github.com/kumardesappan/caffe2onnx
 ```
 
 Build and install latest from source  
 ```
-git clone https://github.com/asiryan/caffe2onnx
+git clone https://github.com/kumardesappan/caffe2onnx
 python setup.py install
 ``` 
 

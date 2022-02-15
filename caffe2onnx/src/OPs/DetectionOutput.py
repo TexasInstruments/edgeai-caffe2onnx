@@ -9,5 +9,5 @@ def createDetectionOutput(layer, nodename, inname, outname, input_shape):
     outname = ["Boxes", "Lables"]
     # Build node
     node = Node.c2oNode(layer, nodename, "Gather", inname, outname, input_shape, output_shape)
-    print(nodename, " node construction completed")
+    #print(nodename, " node construction completed")
     return node

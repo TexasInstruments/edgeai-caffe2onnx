@@ -1,4 +1,5 @@
 import caffe2onnx.src.c2oObject as Node
+import copy
 ##---------------------------------------------Softmax--------------------------------------------------------------##
 # Get hyperparameters
 def getFlattenAttri(layer):
@@ -10,7 +11,7 @@ def getFlattenAttri(layer):
 # Calculate the output dimension
 def getFlattenOutShape(input_shape, dict):
     # Calculate the output dimensionoutput_shape
-    output_shape = input_shape.copy() # same as input dimension
+    output_shape = copy.deepcopy(input_shape)# same as input dimension
     num_dims = len(output_shape[0])
     axis = dict["axis"]
     out_size = 1
@@ -27,5 +28,5 @@ def createFlatten(layer, nodename, inname, outname, input_shape):
     output_shape = getFlattenOutShape(input_shape, dict)
     # Build node
     node = Node.c2oNode(layer, nodename, "Flatten", inname, outname, input_shape, output_shape, dict)
-    print(nodename, " node construction completed")
+    #print(nodename, " node construction completed")
     return node

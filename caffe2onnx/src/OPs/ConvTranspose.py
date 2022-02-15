@@ -60,6 +60,6 @@ def createConvTranspose(layer, nodename, inname, outname, input_shape):
     output_shape = getConvTransposeOutShape(input_shape, layer, dict)
     # Build node
     node = Node.c2oNode(layer, nodename, "ConvTranspose", inname, outname, input_shape, output_shape, dict)
-    print(nodename, " node construction completed")
+    #print(nodename, " node construction completed")
     return node
 

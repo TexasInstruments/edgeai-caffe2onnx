@@ -35,5 +35,5 @@ def createReshape(layer, nodename, inname, outname, input_shape):
 
     # Build node
     node = Node.c2oNode(layer, nodename, "Reshape", inname, outname, input_shape, output_shape)
-    print(nodename, " node construction completed")
+    #print(nodename, " node construction completed")
     return node

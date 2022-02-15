@@ -51,6 +51,6 @@ def createUnPooling(layer,nodename,inname,outname,input_shape):
 
     node = Node.c2oNode(layer, nodename, "MaxUnpool", inname, outname, input_shape, output_shape, dict=dict)
 
-    print(nodename, " node construction completed")
+    #print(nodename, " node construction completed")
 
     return node

@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 from onnx import helper
+import onnx
 
 from . import OPs as op
 from .c2oObject import *
@@ -144,7 +145,7 @@ class Caffe2Onnx():
                 p_t = helper.make_tensor(ParamName[i],ParamType[i],ParamShape[i],ParamData[i])
                 self.onnxmodel.addInputsTVI(p_tvi)
                 self.onnxmodel.addInitTensor(p_t)
-                print("add parameters " + ParamName[i] + " input information and tensor data")
+                #print("add parameters " + ParamName[i] + " input information and tensor data")
         if layer.type == "BatchNorm" or layer.type == "BN" or layer.type == "Scale":
             return ParamName, ParamShape
         return ParamName
@@ -158,7 +159,7 @@ class Caffe2Onnx():
             p_t = helper.make_tensor(Param_Name[i], ParamType[i], ParamShape[i], ParamData[i])
             self.onnxmodel.addInputsTVI(p_tvi)
             self.onnxmodel.addInitTensor(p_t)
-            print("add parameters " + Param_Name[i] + " input information and tensor data")
+            #print("add parameters " + Param_Name[i] + " input information and tensor data")
         return Param_Name
 
 
@@ -214,8 +215,8 @@ class Caffe2Onnx():
 
     def __getNodeList(self,Layers):
         Layers = [ l  for l in Layers if len(l.include) == 0 or l.include[0].phase is None or l.include[0].phase == 1] 
-        for l in Layers:
-            print(l.name)
+        #for l in Layers:
+        #    print(l.name)
         for i in range(len(Layers)):
             
             inname, input_shape = self.__getLastLayerOutNameAndShape(Layers[i])
@@ -410,7 +411,7 @@ class Caffe2Onnx():
                 self.NodeList.append(node)
 
                 self.__n += 2
-                print(nodename, " node construction completed")
+                #print(nodename, " node construction completed")
 
 
 
@@ -586,11 +587,11 @@ class Caffe2Onnx():
             value_info=self.onnxmodel.hidden_out_tvi
         )
         
-        #op = onnx.OperatorSetIdProto()
-        #op.version = 11
-        #model_def = helper.make_model(graph_def, producer_name='caffe', opset_imports=[op])
+        op = onnx.OperatorSetIdProto()
+        op.version = 9
+        model_def = helper.make_model(graph_def, producer_name='caffe', opset_imports=[op])
 
-        model_def = helper.make_model(graph_def, producer_name='caffe')
+        #model_def = helper.make_model(graph_def, producer_name='caffe')
         print("*.onnx model conversion completed")
         return model_def
 
